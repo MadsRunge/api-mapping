@@ -1,0 +1,346 @@
+openapi: 3.0.3
+info:
+  title: Bygningsreglementet.dk API
+  description: |
+    API for søgning i Bygningsreglementet (Danish Building Regulations).
+
+    This API provides search functionality for the Danish Building Regulations (BR18) including:
+    - Full-text search across regulations, guidelines, and documents
+    - Filtering by category (BR18, requirements, appendices, national annexes, guidelines)
+    - Pagination support
+    - Multi-language support (primarily Danish)
+
+    **Base URL:** `https://www.bygningsreglementet.dk`
+
+    **Authentication:** None required - public API
+
+    **Rate Limiting:** No explicit rate limits documented, but recommended to respect standard web etiquette
+
+    **CDN:** Cloudflare (responses cached)
+  version: 1.0.0
+  contact:
+    name: Social- og Boligstyrelsen
+    email: byggeri@sbst.dk
+  license:
+    name: Public Domain
+    url: https://www.bygningsreglementet.dk/
+
+servers:
+  - url: https://www.bygningsreglementet.dk
+    description: Production server
+
+tags:
+  - name: Search
+    description: Search operations for building regulations content
+
+paths:
+  /api/search:
+    get:
+      tags:
+        - Search
+      summary: Search building regulations
+      description: |
+        Search across all building regulations content including requirements,
+        guidelines, appendices, and documents. Returns paginated results with
+        filtering options.
+      operationId: searchRegulations
+      parameters:
+        - name: term
+          in: query
+          required: true
+          description: Search term to query across all content
+          schema:
+            type: string
+            example: brand
+            minLength: 1
+
+        - name: culture
+          in: query
+          required: false
+          description: Language/culture code for results
+          schema:
+            type: string
+            enum:
+              - da
+              - en
+            default: da
+            example: da
+
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number for pagination (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of results per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+
+        - name: category_c
+          in: query
+          required: false
+          description: Filter results by category
+          schema:
+            type: string
+            enum:
+              - ""
+              - br18
+              - kravbestemmelser
+              - bilag
+              - nationale-annekser
+              - vejledninger
+              - vejledning
+              - dokumenter
+            default: ""
+            example: ""
+
+      responses:
+        '200':
+          description: Successful search response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              examples:
+                successfulSearch:
+                  summary: Successful search for "brand"
+                  value:
+                    filters:
+                      - name: Alle resultater
+                        url: https://www.bygningsreglementet.dk/api/search?culture=da&term=brand&pageNumber=1
+                        isActive: true
+                      - name: BR18
+                        url: https://www.bygningsreglementet.dk/api/search?culture=da&term=brand&pageNumber=1&category_c=br18
+                        isActive: false
+                      - name: Kravbestemmelser
+                        url: https://www.bygningsreglementet.dk/api/search?culture=da&term=brand&pageNumber=1&category_c=kravbestemmelser
+                        isActive: false
+                    statusCode: 200
+                    pagination:
+                      previousPageUrl: null
+                      currentPageUrl: https://www.bygningsreglementet.dk/api/search?culture=da&term=brand&pageNumber=1&category_c=
+                      nextPageUrl: https://www.bygningsreglementet.dk/api/search?culture=da&term=brand&pageNumber=2&category_c=&pageSize=10
+                      pageNumber: 1
+                      pageSize: 10
+                      totalPages: 33
+                      totalResults: 321
+                      totalResultsMessage: Din anmodning gav 321 resultater.
+                    data:
+                      - title: Introduktion Bygningsreglements vejledning til kap 5 Brand 11122018-a
+                        text: "Version: 11.12.2018 Bygningsreglements vejledning til kap 5 - Brand..."
+                        url: https://www.bygningsreglementet.dk/media/kxbjoau2/introduktion-bygningsreglements-vejledning-til-kap-5-brand-11122018-a.pdf
+                        score: 0.022318333
+                    errorMessage: null
+                    errorId: null
+                    timestampUtc: "2025-11-12T12:22:10.2046785Z"
+
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    SearchResponse:
+      type: object
+      required:
+        - filters
+        - statusCode
+        - pagination
+        - data
+        - timestampUtc
+      properties:
+        filters:
+          type: array
+          description: Available category filters with their URLs and active state
+          items:
+            $ref: '#/components/schemas/Filter'
+
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 200
+
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+        data:
+          type: array
+          description: Array of search results
+          items:
+            $ref: '#/components/schemas/SearchResult'
+
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if any
+          example: null
+
+        errorId:
+          type: string
+          nullable: true
+          description: Error identifier if any
+          example: null
+
+        timestampUtc:
+          type: string
+          format: date-time
+          description: UTC timestamp of the response
+          example: "2025-11-12T12:22:10.2046785Z"
+
+    Filter:
+      type: object
+      required:
+        - name
+        - url
+        - isActive
+      properties:
+        name:
+          type: string
+          description: Display name of the filter
+          example: Alle resultater
+
+        url:
+          type: string
+          format: uri
+          description: URL to apply this filter
+          example: https://www.bygningsreglementet.dk/api/search?culture=da&term=brand&pageNumber=1
+
+        isActive:
+          type: boolean
+          description: Whether this filter is currently active
+          example: true
+
+    Pagination:
+      type: object
+      required:
+        - pageNumber
+        - pageSize
+        - totalPages
+        - totalResults
+        - totalResultsMessage
+      properties:
+        previousPageUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to previous page (null if on first page)
+          example: null
+
+        currentPageUrl:
+          type: string
+          format: uri
+          description: URL of current page
+          example: https://www.bygningsreglementet.dk/api/search?culture=da&term=brand&pageNumber=1&category_c=
+
+        nextPageUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to next page (null if on last page)
+          example: https://www.bygningsreglementet.dk/api/search?culture=da&term=brand&pageNumber=2&category_c=&pageSize=10
+
+        pageNumber:
+          type: integer
+          description: Current page number (1-indexed)
+          example: 1
+          minimum: 1
+
+        pageSize:
+          type: integer
+          description: Number of results per page
+          example: 10
+          minimum: 1
+
+        totalPages:
+          type: integer
+          description: Total number of pages available
+          example: 33
+          minimum: 0
+
+        totalResults:
+          type: integer
+          description: Total number of results found
+          example: 321
+          minimum: 0
+
+        totalResultsMessage:
+          type: string
+          description: Human-readable message about total results
+          example: Din anmodning gav 321 resultater.
+
+    SearchResult:
+      type: object
+      required:
+        - title
+        - text
+        - url
+        - score
+      properties:
+        title:
+          type: string
+          description: Title of the document or regulation
+          example: Introduktion Bygningsreglements vejledning til kap 5 Brand 11122018-a
+
+        text:
+          type: string
+          description: Preview text/excerpt from the document
+          example: "Version: 11.12.2018 Bygningsreglements vejledning til kap 5 - Brand..."
+
+        url:
+          type: string
+          format: uri
+          description: Direct URL to the document (often PDF)
+          example: https://www.bygningsreglementet.dk/media/kxbjoau2/introduktion-bygningsreglements-vejledning-til-kap-5-brand-11122018-a.pdf
+
+        score:
+          type: number
+          format: float
+          description: Relevance score of the result
+          example: 0.022318333
+          minimum: 0
+          maximum: 1
+
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 400
+
+        errorMessage:
+          type: string
+          description: Error message describing what went wrong
+          example: Invalid search parameters
+
+        errorId:
+          type: string
+          description: Unique identifier for the error
+          example: ERR-2025-001
+
+        timestampUtc:
+          type: string
+          format: date-time
+          description: UTC timestamp of the error
+          example: "2025-11-12T12:22:10.2046785Z"
