@@ -1,0 +1,85 @@
+openapi: 3.0.0
+info:
+  title: BSF.dk API
+  description: The public API for the BSF.dk website.
+  version: 1.0.0
+servers:
+  - url: https://bsf.dk/ubaseline/api
+paths:
+  /localization/getAll:
+    get:
+      summary: Get all localization strings
+      responses:
+        '200':
+          description: A JSON object with localization strings.
+  /siteSettings/get:
+    get:
+      summary: Get site settings
+      responses:
+        '200':
+          description: A JSON object with site settings.
+  /navigation/getTopNavigation:
+    get:
+      summary: Get top navigation links
+      responses:
+        '200':
+          description: A JSON array of navigation links.
+  /BsfNavigation/GetMobileTreeNavigation:
+    get:
+      summary: Get mobile tree navigation
+      responses:
+        '200':
+          description: A JSON object representing the site's navigation structure.
+  /NewsPreview/GetNewsPreviews:
+    post:
+      summary: Get news previews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                year:
+                  type: integer
+                  nullable: true
+                index:
+                  type: integer
+                step:
+                  type: integer
+      responses:
+        '200':
+          description: A JSON object with news previews.
+  /newsletter/panel:
+    get:
+      summary: Get newsletter panel
+      responses:
+        '200':
+          description: A JSON object with newsletter signup form details.
+  /BsfSearchApi/Search:
+    post:
+      summary: Search the site
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                page:
+                  type: integer
+                tagCategoryIds:
+                  type: array
+                  items:
+                    type: integer
+                tagIds:
+                  type: array
+                  items:
+                    type: integer
+                searchableTypes:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: A JSON object with search results.

@@ -1,0 +1,566 @@
+openapi: 3.0.0
+info:
+  title: MEMBRAN-ERFA Web Scraping Specification
+  version: 1.0.0
+  description: |
+    Complete specification for extracting construction membrane documentation from membran-erfa.dk.
+
+    **IMPORTANT**: This is NOT a REST API. This website is a Drupal-based CMS that serves HTML pages.
+    This specification documents the structure for web scraping and content extraction.
+
+    **Content**: Building construction membrane details (vapor barriers, moisture barriers, etc.)
+    **Total Items**: 94 construction details across 7 categories
+    **Language**: Danish (da)
+
+  contact:
+    name: Fonden BYG-ERFA
+    email: info@byg-erfa.dk
+    url: https://membran-erfa.dk
+  license:
+    name: See Ophavsret (Copyright) page
+    url: https://membran-erfa.dk/ophavsret
+
+servers:
+  - url: https://membran-erfa.dk
+    description: Production website (Drupal CMS)
+
+tags:
+  - name: Navigation
+    description: Homepage and category pages
+  - name: Construction Details
+    description: Individual construction detail pages
+  - name: Images
+    description: Construction diagrams and illustrations
+  - name: Publications
+    description: Reference publications for each category
+
+paths:
+  /:
+    get:
+      tags:
+        - Navigation
+      summary: Homepage - List all membrane categories
+      description: |
+        The homepage displays 7 main membrane categories with construction detail counts.
+        Each category shows a teaser image, title, description, and item count.
+      parameters:
+        - name: Accept-Language
+          in: header
+          schema:
+            type: string
+            default: da
+          description: Language preference (Danish is default)
+      responses:
+        '200':
+          description: Homepage HTML with category grid
+          content:
+            text/html:
+              schema:
+                type: object
+                properties:
+                  structure:
+                    type: object
+                    properties:
+                      selector:
+                        type: string
+                        example: "main"
+                      categories:
+                        type: array
+                        description: Extract category information
+                        items:
+                          type: object
+                          properties:
+                            title:
+                              type: string
+                              description: "Selector: link text"
+                              example: "Dampspærre"
+                            url:
+                              type: string
+                              description: "Selector: link href attribute"
+                              example: "/dampspaerre"
+                            description:
+                              type: string
+                              example: "En dampspærre hindrer, at vanddamp i indeluft trænger ud i bygningskonstruktionen"
+                            item_count:
+                              type: integer
+                              description: "Extract from 'Se konstruktionsdetaljer (26)'"
+                              example: 26
+                            image_url:
+                              type: string
+                              description: "Selector: img[src]"
+                              example: "/sites/default/files/styles/max_650x650/public/images/2022-06/dampspaerre_0.jpg"
+                      categories_found:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - "Dampspærre (26 items)"
+                          - "Fugtspærre (17 items)"
+                          - "Geotekstil (5 items)"
+                          - "Radonspærre (14 items)"
+                          - "Undertag (21 items)"
+                          - "Vindspærre (4 items)"
+                          - "Vådrumsmembran (7 items)"
+
+  /{category-slug}:
+    get:
+      tags:
+        - Navigation
+      summary: Category page - List construction details
+      description: |
+        Lists all construction details for a specific membrane category.
+        Includes thumbnail images, titles, and links to detail pages.
+      parameters:
+        - name: category-slug
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - dampspaerre
+              - fugtspaerre
+              - geotekstil
+              - radon
+              - undertag
+              - vindspaerre
+              - vaadrumsmembran
+          examples:
+            vapor_barrier:
+              value: dampspaerre
+              summary: Vapor barrier (26 items)
+            moisture_barrier:
+              value: fugtspaerre
+              summary: Moisture barrier (17 items)
+            geotextile:
+              value: geotekstil
+              summary: Geotextile (5 items)
+            radon_barrier:
+              value: radon
+              summary: Radon barrier (14 items)
+            roofing_underlay:
+              value: undertag
+              summary: Roofing underlay (21 items)
+            wind_barrier:
+              value: vindspaerre
+              summary: Wind barrier (4 items)
+            wet_room_membrane:
+              value: vaadrumsmembran
+              summary: Wet room membrane (7 items)
+      responses:
+        '200':
+          description: Category page HTML with construction details grid
+          content:
+            text/html:
+              schema:
+                type: object
+                properties:
+                  category_info:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        description: "Selector: h1"
+                        example: "Dampspærre"
+                      description:
+                        type: string
+                        example: "En dampspærre er et materialelag, der hindrer..."
+                      item_count:
+                        type: integer
+                        description: "Extract from '26 konstruktioner'"
+                        example: 26
+                  construction_details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                          example: "Bjælkespær og rem"
+                        url:
+                          type: string
+                          example: "/bjaelkespaer-og-rem"
+                        thumbnail_url:
+                          type: string
+                          example: "/sites/default/files/styles/270x159/public/teaser-images/2022-06/scene-13.jpg"
+                  publications_link:
+                    type: string
+                    description: "Link to reference publications"
+                    example: "/publikationer-dampspaerre"
+                  additional_info:
+                    type: object
+                    properties:
+                      execution_notes:
+                        type: string
+                        description: "Important execution details section"
+                      benefits:
+                        type: array
+                        items:
+                          type: string
+                        description: "List of benefits for this membrane type"
+
+  /{construction-detail-slug}:
+    get:
+      tags:
+        - Construction Details
+      summary: Construction detail page - Step-by-step installation
+      description: |
+        Individual construction detail with image gallery showing step-by-step installation process.
+        Each image has a descriptive caption. Images are available in high resolution (2000px width).
+      parameters:
+        - name: construction-detail-slug
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            example1:
+              value: bjaelkespaer-og-rem
+              summary: Beam and purlin detail
+            example2:
+              value: vindue-let-ydervaeg
+              summary: Window in light exterior wall
+      responses:
+        '200':
+          description: Construction detail page with image gallery
+          content:
+            text/html:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+                    description: "Selector: h1"
+                    example: "Bjælkespær og rem"
+                  reference_link:
+                    type: object
+                    description: "Link to BYG-ERFA publication if available"
+                    properties:
+                      text:
+                        type: string
+                        example: "BYG-ERFA (39) 24 01 10"
+                      url:
+                        type: string
+                        example: "https://byg-erfa.dk/dampspaerrer-monteringsdetaljer-0"
+                      description:
+                        type: string
+                        example: "Dampspærrer – monteringsdetaljer"
+                  image_gallery:
+                    type: array
+                    description: "Step-by-step installation images with captions"
+                    items:
+                      type: object
+                      properties:
+                        caption:
+                          type: string
+                          example: "Limtræsrem"
+                        url:
+                          type: string
+                          description: "Full resolution image (2000px width)"
+                          example: "/sites/default/files/styles/2000/public/gallery/2022-02/bjaelkespaer_scene-1.jpg"
+                        thumbnail_url:
+                          type: string
+                          description: "Can be extracted from page thumbnail if needed"
+                        order:
+                          type: integer
+                          description: "Images are ordered sequentially in the gallery"
+                  image_extraction_notes:
+                    type: object
+                    properties:
+                      selectors:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - "Images are within gallery links"
+                          - "Each link contains high-res image URL"
+                          - "Alt text contains the step description"
+                      url_pattern:
+                        type: string
+                        example: "/sites/default/files/styles/2000/public/gallery/{date}/{filename}.jpg"
+
+  /sites/default/files/styles/{size}/public/{path}:
+    get:
+      tags:
+        - Images
+      summary: Image assets - Drupal image styles
+      description: |
+        All images are served through Drupal's image style system.
+        Multiple sizes available by changing the style parameter.
+      parameters:
+        - name: size
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - "270x159"
+              - "max_325x325"
+              - "max_650x650"
+              - "2000"
+          description: |
+            Image size presets:
+            - 270x159: Category page thumbnails
+            - max_325x325: Small thumbnails
+            - max_650x650: Category teaser images
+            - 2000: Full resolution (2000px width)
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Path to original image (e.g., images/2022-06/dampspaerre_0.jpg)"
+      responses:
+        '200':
+          description: Image file (JPEG)
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+
+  /publikationer-{category}:
+    get:
+      tags:
+        - Publications
+      summary: Reference publications for category
+      description: |
+        Lists relevant BYG-ERFA publications and external resources for the membrane category.
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            vapor_barrier:
+              value: dampspaerre
+      responses:
+        '200':
+          description: Publications listing page
+
+components:
+  schemas:
+    CategorySummary:
+      type: object
+      description: Summary information extracted from homepage
+      properties:
+        slug:
+          type: string
+          example: "dampspaerre"
+        title:
+          type: string
+          example: "Dampspærre"
+        description:
+          type: string
+        construction_count:
+          type: integer
+          example: 26
+        thumbnail_url:
+          type: string
+        page_url:
+          type: string
+          example: "https://membran-erfa.dk/dampspaerre"
+      required:
+        - slug
+        - title
+        - construction_count
+        - page_url
+
+    ConstructionDetail:
+      type: object
+      description: Full construction detail information
+      properties:
+        slug:
+          type: string
+          example: "bjaelkespaer-og-rem"
+        title:
+          type: string
+          example: "Bjælkespær og rem"
+        category:
+          type: string
+          example: "dampspaerre"
+        reference_publication:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "BYG-ERFA (39) 24 01 10"
+            url:
+              type: string
+            title:
+              type: string
+        installation_steps:
+          type: array
+          items:
+            type: object
+            properties:
+              step_number:
+                type: integer
+              description:
+                type: string
+              image_url:
+                type: string
+        page_url:
+          type: string
+          example: "https://membran-erfa.dk/bjaelkespaer-og-rem"
+      required:
+        - slug
+        - title
+        - category
+        - installation_steps
+        - page_url
+
+    ScrapingSession:
+      type: object
+      description: Recommended scraping workflow
+      properties:
+        step1:
+          type: string
+          example: "Fetch homepage to get all categories"
+        step2:
+          type: string
+          example: "For each category, fetch category page to get construction details list"
+        step3:
+          type: string
+          example: "For each construction detail, fetch detail page and extract images"
+        step4:
+          type: string
+          example: "Download all images in desired resolution"
+        rate_limiting:
+          type: object
+          properties:
+            recommended_delay:
+              type: string
+              example: "1-2 seconds between requests"
+            polite_scraping:
+              type: string
+              example: "Respect robots.txt and add User-Agent header"
+        robots_txt:
+          type: string
+          example: "https://membran-erfa.dk/robots.txt"
+
+  examples:
+    HomepageExtraction:
+      summary: Extract all categories from homepage
+      value:
+        url: "https://membran-erfa.dk/"
+        method: "GET"
+        extraction:
+          categories:
+            - title: "Dampspærre"
+              url: "/dampspaerre"
+              count: 26
+            - title: "Fugtspærre"
+              url: "/fugtspaerre"
+              count: 17
+            - title: "Geotekstil"
+              url: "/geotekstil"
+              count: 5
+            - title: "Radonspærre"
+              url: "/radon"
+              count: 14
+            - title: "Undertag"
+              url: "/undertag"
+              count: 21
+            - title: "Vindspærre"
+              url: "/vindspaerre"
+              count: 4
+            - title: "Vådrumsmembran"
+              url: "/vaadrumsmembran"
+              count: 7
+
+    CategoryPageExtraction:
+      summary: Extract construction details from category page
+      value:
+        url: "https://membran-erfa.dk/dampspaerre"
+        method: "GET"
+        extraction:
+          category: "Dampspærre"
+          description: "En dampspærre er et materialelag..."
+          items_count: 26
+          construction_details:
+            - title: "Bjælkespær og rem"
+              url: "/bjaelkespaer-og-rem"
+              thumbnail: "/sites/default/files/styles/270x159/public/teaser-images/2022-06/scene-13.jpg"
+            - title: "Dampspærre i træskelethuse"
+              url: "/dampspaerre-traeskelethuse"
+              thumbnail: "/sites/default/files/styles/270x159/public/teaser-images/2022-06/scene-15.jpg"
+
+    DetailPageExtraction:
+      summary: Extract images from construction detail page
+      value:
+        url: "https://membran-erfa.dk/bjaelkespaer-og-rem"
+        method: "GET"
+        extraction:
+          title: "Bjælkespær og rem"
+          reference:
+            code: "BYG-ERFA (39) 24 01 10"
+            url: "https://byg-erfa.dk/dampspaerrer-monteringsdetaljer-0"
+          images:
+            - caption: "Illustration med alle tegningspåskrifter"
+              url: "https://membran-erfa.dk/sites/default/files/styles/2000/public/gallery/2022-02/bjaelkespaer_scene-14.jpg"
+            - caption: "Limtræsrem"
+              url: "https://membran-erfa.dk/sites/default/files/styles/2000/public/gallery/2022-02/bjaelkespaer_scene-1.jpg"
+            - caption: "Tagkonstruktion"
+              url: "https://membran-erfa.dk/sites/default/files/styles/2000/public/gallery/2022-02/bjaelkespaer_scene-2.jpg"
+
+x-scraping-tools:
+  recommended:
+    python:
+      - "beautifulsoup4 - HTML parsing"
+      - "requests - HTTP client"
+      - "scrapy - Full scraping framework"
+      - "selenium - If JavaScript rendering needed (not required for this site)"
+    javascript:
+      - "cheerio - HTML parsing"
+      - "axios - HTTP client"
+      - "puppeteer - If JavaScript rendering needed (not required)"
+    bash:
+      - "curl - HTTP client"
+      - "pup - HTML parsing"
+      - "wget - Downloading files"
+
+x-selectors:
+  homepage:
+    categories: "main a[href*='/dampspaerre'], a[href*='/fugtspaerre'], etc."
+    category_title: "link text content"
+    category_image: "img[src*='max_650x650']"
+    category_description: "link with description text"
+    item_count: "text containing 'Se konstruktionsdetaljer (\\d+)'"
+
+  category_page:
+    page_title: "h1"
+    construction_items: "links to detail pages"
+    construction_thumbnail: "img[src*='270x159']"
+    publications_link: "a[href*='/publikationer-']"
+
+  detail_page:
+    title: "h1"
+    reference_link: "a[href*='byg-erfa.dk']"
+    gallery_images: "a[href*='/styles/2000/']"
+    image_captions: "alt text or link text"
+
+x-content-structure:
+  total_items: 94
+  categories:
+    - name: "Dampspærre (Vapor Barrier)"
+      slug: "dampspaerre"
+      count: 26
+    - name: "Fugtspærre (Moisture Barrier)"
+      slug: "fugtspaerre"
+      count: 17
+    - name: "Geotekstil (Geotextile)"
+      slug: "geotekstil"
+      count: 5
+    - name: "Radonspærre (Radon Barrier)"
+      slug: "radon"
+      count: 14
+    - name: "Undertag (Roofing Underlay)"
+      slug: "undertag"
+      count: 21
+    - name: "Vindspærre (Wind Barrier)"
+      slug: "vindspaerre"
+      count: 4
+    - name: "Vådrumsmembran (Wet Room Membrane)"
+      slug: "vaadrumsmembran"
+      count: 7

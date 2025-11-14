@@ -1,10 +1,17 @@
 # API Mapping Project
 
+https://vbn.aau.dk/da/organisations/build-institut-for-byggeri-by-og-milj%C3%B8/publications/?type=/dk/atira/pure/researchoutput/researchoutputtypes/bookanthology/commissioned&page=1
+
+https://membran-erfa.dk/
+
+https://danskbyggeskik.dk/
+
 Complete API documentation for various websites discovered using Chrome DevTools MCP Server.
 
 ## 📁 Documented APIs
 
 ### [Bygningsreglementet.dk](./APIs/bygningsreglementet.dk/)
+
 **Danish Building Regulations Search API**
 
 - **Base URL**: `https://www.bygningsreglementet.dk`
@@ -13,6 +20,7 @@ Complete API documentation for various websites discovered using Chrome DevTools
 - **Purpose**: Search Danish building regulations, guidelines, and documents
 
 **Documentation:**
+
 - [Quick Start Guide](./APIs/bygningsreglementet.dk/README.md)
 - [OpenAPI Specification](./APIs/bygningsreglementet.dk/openapi.yaml)
 - [Technical Workbook](./APIs/bygningsreglementet.dk/workbook.md)
@@ -30,6 +38,7 @@ Complete API documentation for various websites discovered using Chrome DevTools
 ## 🛠️ Discovery Methodology
 
 All APIs in this repository were mapped using:
+
 - **Chrome DevTools MCP Server** - Browser automation and network capture
 - **Manual exploration** - Interactive testing and validation
 - **Comprehensive documentation** - OpenAPI specs, workbooks, and examples
@@ -37,6 +46,7 @@ All APIs in this repository were mapped using:
 ## 📚 Documentation Structure
 
 Each API includes:
+
 1. **README.md** - User-friendly quick start guide
 2. **openapi.yaml** - Complete OpenAPI 3.0 specification
 3. **workbook.md** - Technical discovery process and insights
@@ -55,16 +65,19 @@ To use any documented API:
 ## 📖 How to Read the Documentation
 
 ### For Quick Integration
+
 - Start with **README.md**
 - Copy examples from **examples/** directory
 - Reference **openapi.yaml** for details
 
 ### For Deep Understanding
+
 - Read **workbook.md** for technical insights
 - Review **openapi.yaml** for complete API specification
 - Study examples for best practices
 
 ### For API Testing
+
 - Import **openapi.yaml** into Postman/Insomnia
 - Use examples as starting point
 - Modify parameters as needed
@@ -72,6 +85,7 @@ To use any documented API:
 ## 🔧 Tools & Compatibility
 
 ### OpenAPI Specification Compatible With:
+
 - Swagger UI
 - Postman
 - Insomnia
@@ -80,6 +94,7 @@ To use any documented API:
 - API Blueprint
 
 ### Example Code Languages:
+
 - Bash/cURL (command line)
 - JavaScript/Node.js
 - Python
@@ -87,6 +102,7 @@ To use any documented API:
 ## 📊 Statistics
 
 ### Bygningsreglementet.dk Documentation
+
 - **Total Files**: 7 files
 - **Main Documentation**: ~36 KB
 - **Code Examples**: ~25 KB
@@ -97,17 +113,20 @@ To use any documented API:
 ## 🎯 Use Cases
 
 ### Search Danish Building Regulations
+
 ```bash
 curl "https://www.bygningsreglementet.dk/api/search?term=energi&culture=da"
 ```
 
 ### Integrate in Your Application
+
 ```javascript
 const api = new BygningsreglementAPI();
-const results = await api.search('brand', {category: 'kravbestemmelser'});
+const results = await api.search("brand", { category: "kravbestemmelser" });
 ```
 
 ### Build a Search Portal
+
 ```python
 api = BygningsreglementAPI()
 all_results = api.search_all('ventilation', category='vejledninger')
@@ -119,6 +138,7 @@ To add a new API documentation:
 
 1. Create folder: `APIs/[site-name]/`
 2. Follow the documentation structure:
+
    - README.md (quick start)
    - openapi.yaml (specification)
    - workbook.md (technical details)
