@@ -1,0 +1,543 @@
+openapi: 3.0.3
+info:
+  title: Knauf Denmark Download Center API
+  description: |
+    API for accessing Knauf Denmark's document download center. This API allows searching and filtering
+    through technical documentation, product datasheets, certificates, manuals, and other documents
+    related to Knauf products in Denmark.
+
+    **Note**: This API uses Algolia Search as the backend search engine.
+
+    ## Key Features
+    - Full-text search across all documents
+    - Faceted filtering by language, document type, product category, application area, and division
+    - Pagination support
+    - Download individual documents or create archives
+    - Multi-language support (Danish, English, German, Swedish)
+
+    ## Authentication
+    The API uses Algolia's authentication headers. The API key provided is read-only and specific
+    to the Knauf Denmark download center.
+
+  version: 1.0.0
+  contact:
+    name: Knauf Denmark Support
+    email: kundeservice-dk@knauf.com
+    url: https://knauf.com/da-DK/kontakt-knauf-afdeling
+  termsOfService: https://knauf.com/da-DK/legal-notice
+
+servers:
+  - url: https://s8qhlx2fwa-dsn.algolia.net/1
+    description: Algolia Search API (Primary)
+  - url: https://knauf.com/api/download-center/v1
+    description: Knauf Download API (Document Downloads)
+
+security:
+  - AlgoliaAuth: []
+
+paths:
+  /indexes/*/queries:
+    post:
+      summary: Search documents
+      description: |
+        Search and filter documents in the Knauf Denmark download center using Algolia's multi-query endpoint.
+        This endpoint supports full-text search, faceted filtering, pagination, and sorting.
+
+        The endpoint accepts multiple query requests in a single call, allowing for efficient
+        retrieval of both search results and facet counts.
+
+      operationId: searchDocuments
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - requests
+              properties:
+                requests:
+                  type: array
+                  description: Array of search query objects
+                  items:
+                    $ref: '#/components/schemas/SearchRequest'
+            examples:
+              basicSearch:
+                summary: Basic search for "Ultra Board"
+                value:
+                  requests:
+                    - indexName: prod_download_center_dk
+                      params: "query=Ultra Board&page=0&facetFilters=[[\"language:da\",\"language:en\",\"language:de\",\"language:sv\"]]"
+
+              filteredSearch:
+                summary: Search with document type filter
+                value:
+                  requests:
+                    - indexName: prod_download_center_dk
+                      params: "query=&page=0&facetFilters=[[\"documentTypes:technical-data-sheet\"],[\"language:da\",\"language:en\"]]"
+
+              paginatedSearch:
+                summary: Get page 2 of results
+                value:
+                  requests:
+                    - indexName: prod_download_center_dk
+                      params: "query=gips&page=1&facetFilters=[[\"language:da\"]]"
+
+      responses:
+        '200':
+          description: Successful search response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResponse'
+              examples:
+                searchResults:
+                  summary: Example search results
+                  value:
+                    results:
+                      - hits:
+                          - name: "Ultra Board® 15 U-1 (4 spartelkanter) | Produktdatablad | DK"
+                            assetId: "abfa9e74-58c7-4257-b592-895b15155394"
+                            language: "da"
+                            documentTypes: ["product-data-sheet"]
+                            fileFormat: "pdf"
+                            fileSize: 231998
+                            pageCount: 1
+                            url: "https://s7g10.scene7.com/is/content/knauf/ultra_board-082019_4_forsaenkede-kanterpdf"
+                        nbHits: 22
+                        page: 0
+                        nbPages: 2
+                        hitsPerPage: 20
+
+        '400':
+          description: Bad request - invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '403':
+          description: Forbidden - invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /assets/{assetId}:
+    get:
+      summary: Download a document
+      description: |
+        Download a specific document by its asset ID. This endpoint returns the actual file
+        (PDF, ZIP, XLS, etc.) for download.
+
+      operationId: downloadDocument
+      tags:
+        - Downloads
+      servers:
+        - url: https://knauf.com/api/download-center/v1
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          description: Unique identifier for the document asset
+          schema:
+            type: string
+            format: uuid
+          example: "abfa9e74-58c7-4257-b592-895b15155394"
+
+        - name: download
+          in: query
+          required: true
+          description: Flag to trigger download
+          schema:
+            type: boolean
+            enum: [true]
+          example: true
+
+        - name: country
+          in: query
+          required: true
+          description: Country code (ISO 3166-1 alpha-2)
+          schema:
+            type: string
+            pattern: '^[a-z]{2}$'
+          example: "dk"
+
+        - name: locale
+          in: query
+          required: true
+          description: Locale code (language-country)
+          schema:
+            type: string
+            pattern: '^[a-z]{2}-[A-Z]{2}$'
+          example: "da-DK"
+
+      responses:
+        '200':
+          description: Document file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
+            application/vnd.ms-excel:
+              schema:
+                type: string
+                format: binary
+
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /archive:
+    get:
+      summary: Download multiple documents as archive
+      description: |
+        Create and download a ZIP archive containing multiple selected documents.
+        Documents must be selected through the web interface before calling this endpoint.
+
+      operationId: downloadArchive
+      tags:
+        - Downloads
+      servers:
+        - url: https://knauf.com/api/download-center/v1
+      parameters:
+        - name: country
+          in: query
+          required: true
+          description: Country code (ISO 3166-1 alpha-2)
+          schema:
+            type: string
+            pattern: '^[a-z]{2}$'
+          example: "dk"
+
+        - name: filename
+          in: query
+          required: true
+          description: Archive filename (auto-generated with timestamp)
+          schema:
+            type: string
+            pattern: '^Archive_\d{14}$'
+          example: "Archive_20251114135305"
+
+      responses:
+        '200':
+          description: ZIP archive containing selected documents
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+
+        '400':
+          description: Bad request - no documents selected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    AlgoliaAuth:
+      type: apiKey
+      in: header
+      name: x-algolia-api-key
+      description: |
+        Algolia API key for read-only access to the Knauf Denmark download center search index.
+
+        **API Key**: `b3a868e70bb30b11a4b7e385c765ba91`
+
+        **Application ID**: `S8QHLX2FWA` (sent via `x-algolia-application-id` header)
+
+  schemas:
+    SearchRequest:
+      type: object
+      required:
+        - indexName
+        - params
+      properties:
+        indexName:
+          type: string
+          description: The Algolia index name
+          enum:
+            - prod_download_center_dk
+          example: "prod_download_center_dk"
+
+        params:
+          type: string
+          description: |
+            URL-encoded query parameters for the search request. Common parameters include:
+            - `query`: Search query string
+            - `page`: Page number (0-indexed)
+            - `hitsPerPage`: Number of results per page (default: 20)
+            - `facetFilters`: Array of facet filters (JSON-encoded)
+            - `facets`: Array of facets to retrieve counts for
+            - `maxValuesPerFacet`: Maximum number of facet values to return (default: 50)
+            - `analytics`: Enable/disable analytics tracking
+            - `clickAnalytics`: Enable/disable click analytics
+            - `highlightPreTag`: HTML tag for highlighting (default: `__ais-highlight__`)
+            - `highlightPostTag`: HTML closing tag for highlighting
+            - `userToken`: Anonymous user token for tracking
+          example: "query=Ultra Board&page=0&facetFilters=[[\"language:da\",\"language:en\"]]&facets=[\"documentTypes\",\"productCategories.lvl0.da\"]"
+
+    SearchResponse:
+      type: object
+      properties:
+        hits:
+          type: array
+          description: Array of search result documents
+          items:
+            $ref: '#/components/schemas/Document'
+
+        nbHits:
+          type: integer
+          description: Total number of matching documents
+          example: 22
+
+        page:
+          type: integer
+          description: Current page number (0-indexed)
+          example: 0
+
+        nbPages:
+          type: integer
+          description: Total number of pages
+          example: 2
+
+        hitsPerPage:
+          type: integer
+          description: Number of results per page
+          example: 20
+
+        facets:
+          type: object
+          description: Facet counts for filtering
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: integer
+          example:
+            documentTypes:
+              technical-data-sheet: 450
+              manual: 120
+              brochure: 230
+            language:
+              da: 800
+              en: 650
+
+    Document:
+      type: object
+      properties:
+        objectID:
+          type: string
+          description: Unique Algolia object ID
+          example: "neJfyiF4ftJJQKxfKy5ZLq"
+
+        name:
+          type: string
+          description: Document title/name
+          example: "Ultra Board® 15 U-1 (4 spartelkanter) | Produktdatablad | DK"
+
+        assetId:
+          type: string
+          format: uuid
+          description: Unique asset identifier for downloading
+          example: "abfa9e74-58c7-4257-b592-895b15155394"
+
+        language:
+          type: string
+          description: Primary language of the document
+          enum: [da, en, de, sv]
+          example: "da"
+
+        languages:
+          type: array
+          description: All available languages for this document
+          items:
+            type: string
+          example: ["da", "en"]
+
+        productNames:
+          type: array
+          description: Associated product names
+          items:
+            type: string
+          example: ["Ultra Board® 15 mm", "Ultra Board® 15.5"]
+
+        documentTypes:
+          type: array
+          description: Document type classifications
+          items:
+            type: string
+            enum:
+              - product-data-sheet
+              - technical-data-sheet
+              - declaration-of-performance
+              - manual
+              - environmental-product-declaration
+              - certificate
+              - brochure
+              - safety-data-sheet
+              - technical-drawing
+              - catalog
+              - product-specification
+              - technical-information
+              - assembly-instructions
+              - fire-classification-report
+              - sustainability-certificate
+              - system-data-sheet
+          example: ["product-data-sheet"]
+
+        url:
+          type: string
+          format: uri
+          description: URL to the document on Scene7 CDN
+          example: "https://s7g10.scene7.com/is/content/knauf/ultra_board-082019_4_forsaenkede-kanterpdf"
+
+        fileFormat:
+          type: string
+          description: File format extension
+          enum: [pdf, zip, xls, xlsx, doc, docx, dwg]
+          example: "pdf"
+
+        fileSize:
+          type: integer
+          description: File size in bytes
+          example: 231998
+
+        pageCount:
+          type: integer
+          description: Number of pages (for PDF documents)
+          example: 1
+
+        lastUpdated:
+          type: integer
+          description: Last update timestamp (Unix milliseconds)
+          example: 1747641288000
+
+        division:
+          type: string
+          description: Knauf business division
+          enum:
+            - Knauf Gypsum
+            - Knauf Insulation
+            - Knauf Ceiling Solutions
+          example: "Knauf Gypsum"
+
+        areasOfApplication:
+          type: object
+          description: Application areas by language
+          properties:
+            da:
+              type: array
+              items:
+                type: string
+              example: ["Indendørs"]
+            en:
+              type: array
+              items:
+                type: string
+              example: ["Interior"]
+
+        fieldsOfApplication:
+          type: object
+          description: Specific application fields by language
+          properties:
+            da:
+              type: array
+              items:
+                type: string
+              example: ["Indervægge", "Lofter"]
+            en:
+              type: array
+              items:
+                type: string
+              example: ["Interior wall", "Ceiling"]
+
+        productCategories:
+          type: object
+          description: Hierarchical product categories
+          properties:
+            lvl0:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                da: ["Plader"]
+                en: ["Boards"]
+            lvl1:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                da: ["Plader > Gipsplader"]
+                en: ["Boards > Gypsum boards"]
+            lvl2:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                da: ["Plader > Gipsplader > Ultra Board®"]
+                en: ["Boards > Gypsum boards > Ultra boards"]
+
+        relatedProductNrs:
+          type: array
+          description: Related product numbers
+          items:
+            type: string
+          example: ["26475_0087"]
+
+        clickCount:
+          type: integer
+          description: Number of times this document has been clicked
+          example: 213
+
+        keywords:
+          type: array
+          description: Additional search keywords
+          items:
+            type: string
+          example: []
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+          example: "Invalid API key"
+
+        status:
+          type: integer
+          description: HTTP status code
+          example: 403
+
+tags:
+  - name: Search
+    description: Search and filter operations for documents
+  - name: Downloads
+    description: Document download operations
+
+externalDocs:
+  description: Knauf Denmark Official Website
+  url: https://knauf.com/da-DK/knauf-gips
