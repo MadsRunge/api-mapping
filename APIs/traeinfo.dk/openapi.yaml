@@ -1,0 +1,79 @@
+openapi: 3.0.0
+info:
+  title: Traeinfo.dk API
+  description: |
+    This document provides an overview of the public API for the traeinfo.dk website.
+    The website is built on WordPress and uses the WordPress REST API.
+    For a complete reference of the WordPress REST API, please see the [official documentation](https://developer.wordpress.org/rest-api/).
+  version: 1.0.0
+servers:
+  - url: https://traeinfo.dk
+paths:
+  /wp-json/wp/v2/posts:
+    get:
+      summary: Get posts
+      description: Retrieves a list of posts.
+      parameters:
+        - name: context
+          in: query
+          description: Scope under which the request is made; determines fields present in response.
+          schema:
+            type: string
+            enum: [view, embed, edit]
+            default: view
+        - name: page
+          in: query
+          description: Current page of the collection.
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          description: Maximum number of items to be returned in result set.
+          schema:
+            type: integer
+            default: 10
+        - name: search
+          in: query
+          description: Limit results to those matching a string.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of posts.
+  /wp-json/wp/v2/pages:
+    get:
+      summary: Get pages
+      description: Retrieves a list of pages.
+      responses:
+        '200':
+          description: A list of pages.
+  /wp-json/wp/v2/media:
+    get:
+      summary: Get media
+      description: Retrieves a list of media.
+      responses:
+        '200':
+          description: A list of media.
+  /wp-admin/admin-ajax.php:
+    post:
+      summary: AJAX endpoint
+      description: A general purpose AJAX endpoint for WordPress. The action is specified in the request body.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+      responses:
+        '200':
+          description: The response depends on the action.
+  /?wc-ajax=get_refreshed_fragments:
+    post:
+      summary: WooCommerce Fragments
+      description: Retrieves updated cart information for WooCommerce.
+      responses:
+        '200':
+          description: HTML fragments for the mini-cart.
