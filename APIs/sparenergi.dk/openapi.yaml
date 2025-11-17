@@ -1,0 +1,138 @@
+openapi: 3.0.0
+info:
+  title: SparEnergi.dk API
+  description: API for accessing energy label data from SparEnergi.dk.
+  version: 1.0.0
+servers:
+  - url: https://sparenergi.dk
+    description: Main site
+  - url: https://emoweb.dk
+    description: Energy label data and images
+
+paths:
+  /address/autocomplete:
+    get:
+      summary: Address Autocomplete
+      description: Provides a list of address suggestions based on a search query.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: The address to search for.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of address suggestions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: The full address string.
+                    label:
+                      type: string
+                      description: The label for the address suggestion.
+              example:
+                - value: "Rådhuspladsen 1, 9300 Sæby"
+                  label: "Rådhuspladsen 1, 9300 Sæby"
+  /EMODigital/EMODigital.svc/Picture/{EnergyLabelSerialIdentifier}:
+    get:
+      summary: Get Building Image
+      description: Retrieves the image of the building associated with an energy label.
+      parameters:
+        - name: EnergyLabelSerialIdentifier
+          in: path
+          required: true
+          description: The serial identifier of the energy label.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The building image.
+          content:
+            image/jpeg: {}
+  /getcompcon/api/Data/GetPDFToBrowser:
+    get:
+      summary: Get PDF Report
+      description: Retrieves the full energy label report as a PDF.
+      parameters:
+        - name: EnergyLabelSerialIdentifier
+          in: query
+          required: true
+          description: The serial identifier of the energy label.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The energy label report in PDF format.
+          content:
+            application/pdf: {}
+  /energimærke/nuvaerende-energimaerke-b:
+    post:
+      summary: Get Statistics
+      description: Retrieves statistical data for energy labels based on specified filters. This is a Drupal AJAX endpoint.
+      parameters:
+        - name: ajax_form
+          in: query
+          required: true
+          schema:
+            type: integer
+            enum: [1]
+        - name: _wrapper_format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [drupal_ajax]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                house_type:
+                  type: string
+                heating_type:
+                  type: string
+                year_of_construction:
+                  type: string
+                municipality_filter:
+                  type: string
+                form_build_id:
+                  type: string
+                form_id:
+                  type: string
+                _triggering_element_name:
+                  type: string
+                _triggering_element_value:
+                  type: string
+                _drupal_ajax:
+                  type: integer
+                ajax_page_state[theme]:
+                  type: string
+                ajax_page_state[theme_token]:
+                  type: string
+                ajax_page_state[libraries]:
+                  type: string
+      responses:
+        '200':
+          description: A JSON response containing Drupal AJAX commands.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                    settings:
+                      type: object
+                    data:
+                      type: string

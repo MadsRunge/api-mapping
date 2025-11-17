@@ -1,0 +1,186 @@
+openapi: 3.0.0
+info:
+  title: Rockwool Product API
+  description: API for searching and filtering Rockwool products.
+  version: 1.0.0
+servers:
+  - url: https://searchserver.rockwoolgroup.com
+paths:
+  /api/filter:
+    post:
+      summary: Filter and search for products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                facetFields:
+                  type: array
+                  items:
+                    type: string
+                returnFields:
+                  type: array
+                  items:
+                    type: string
+                page:
+                  type: integer
+                count:
+                  type: integer
+                filterCategory:
+                  type: string
+                notSelfExcludeFilters:
+                  type: boolean
+                multiSelectFilters:
+                  type: array
+                  items:
+                    type: string
+                filters:
+                  type: array
+                  items:
+                    type: string
+                culture:
+                  type: string
+                languageCode:
+                  type: string
+                site:
+                  type: string
+      responses:
+        '200':
+          description: A list of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  facetFields:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        values:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              count:
+                                type: integer
+                  totalCount:
+                    type: integer
+                  contents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        pageType:
+                          type: string
+                        url:
+                          type: string
+                        excerpt:
+                          type: string
+                        image:
+                          type: string
+                        filteredProductScaledImage:
+                          type: string
+                        productCategories:
+                          type: string
+                        productCategoriesList:
+                          type: array
+                          items:
+                            type: string
+                        properties:
+                          type: object
+  /api/search:
+    post:
+      summary: Search for content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                brandsInsideCulture:
+                  type: array
+                  items:
+                    type: string
+                brandsOutsideCulture:
+                  type: array
+                  items:
+                    type: string
+                count:
+                  type: integer
+                onlySameSite:
+                  type: boolean
+                query:
+                  type: string
+                page:
+                  type: integer
+                languageCode:
+                  type: string
+                site:
+                  type: string
+                culture:
+                  type: string
+                searchPage:
+                  type: string
+                unitSystem:
+                  type: string
+      responses:
+        '200':
+          description: A list of search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCount:
+                    type: integer
+                  averageScore:
+                    type: number
+                  documents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        type:
+                          type: string
+                        url:
+                          type: string
+                        excerpt:
+                          type: string
+                        location:
+                          type: string
+                        site:
+                          type: string
+                        culture:
+                          type: string
+                        pageType:
+                          type: string
+                        score:
+                          type: number
+                        brand:
+                          type: string
+                        gatedContent:
+                          type: boolean
+                        isNotDownloadedAfterFormSent:
+                          type: boolean
+                        isSingleSignupDownload:
+                          type: boolean
+                        isPrintOnly:
+                          type: boolean
+                        priority:
+                          type: string
